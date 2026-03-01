@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { formatNumber } from '../lib/utils';
 import { clsx } from "clsx";
 
 // Empty component

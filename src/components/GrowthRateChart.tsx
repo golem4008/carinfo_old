@@ -118,7 +118,11 @@ const GrowthRateChart: React.FC<GrowthRateChartProps> = ({ className = '', dateR
                 axisLine={{ stroke: '#e5e7eb' }}
                 tickFormatter={(value) => `${value > 0 ? '+' : ''}${value}%`}
               />
-              <Tooltip content={<CustomTooltip />} />
+      <Tooltip 
+        content={<CustomTooltip />} 
+        contentStyle={{ pointerEvents: 'none' }}
+         offset={100} // 调整偏移量值为100
+      />
               <Legend 
                 wrapperStyle={{ paddingTop: 10 }}
                 formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}

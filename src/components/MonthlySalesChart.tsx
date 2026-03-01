@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { DateRange } from '../types';
 import MonthlyChart from './MonthlyChart';
-import MonthlySalesTable from './MonthlySalesTable';
 
 interface MonthlySalesChartProps {
   className?: string;
@@ -24,10 +23,7 @@ const MonthlySalesChart: React.FC<MonthlySalesChartProps> = ({ className = '', d
       className={className}
     >
       {/* 柱状图 - 单独占据一行 */}
-      <MonthlyChart dateRange={dateRange} className="mb-8" />
-      
-      {/* 表格 - 单独占据一行 */}
-      <MonthlySalesTable dateRange={dateRange} />
+      <MonthlyChart dateRange={dateRange} className="" />
     </motion.div>
   );
 };

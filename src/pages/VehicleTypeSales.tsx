@@ -1,48 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
-import { DateRange } from '../types';
+import { DateRange, CarModelData } from '../types';
 import DateFilter from '../components/DateFilter';
 import { useLocation } from 'react-router-dom';
 import ViewSelector from '../components/ViewSelector';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
-
-// 模拟的车辆类型销量数据
-const vehicleTypeData = [
-  { name: 'SUV', value: 210000, color: '#3b82f6' },
-  { name: '轿车', value: 185000, color: '#10b981' },
-  { name: '小型车', value: 32000, color: '#f59e0b' },
-  { name: '豪华SUV', value: 20000, color: '#8b5cf6' },
-];
-
-// 模拟的各厂商车辆类型分布数据
-const manufacturerVehicleTypeData = [
-  { manufacturer: '特斯拉', SUV: 40000, 轿车: 45000, 小型车: 0, 豪华SUV: 0, color: '#E82127' },
-  { manufacturer: '比亚迪', SUV: 35000, 轿车: 75000, 小型车: 20000, 豪华SUV: 10000, color: '#0066B3' },
-  { manufacturer: '大众', SUV: 30000, 轿车: 25000, 小型车: 0, 豪华SUV: 0, color: '#000000' },
-  { manufacturer: '丰田', SUV: 25000, 轿车: 20000, 小型车: 0, 豪华SUV: 0, color: '#EB0A1E' },
-  { manufacturer: '本田', SUV: 30000, 轿车: 20000, 小型车: 0, 豪华SUV: 0, color: '#FF3333' },
-  { manufacturer: '吉利', SUV: 25000, 轿车: 0, 小型车: 12000, 豪华SUV: 10000, color: '#2C3E50' },
-  { manufacturer: '理想', SUV: 25000, 轿车: 0, 小型车: 0, 豪华SUV: 0, color: '#6b7280' },
-];
-
-// 模拟的月度车辆类型变化数据
-const monthlyVehicleTypeData = [
-  { month: '2025.01', SUV: 38000, 轿车: 34000, 小型车: 5000, 豪华SUV: 3000 },
-  { month: '2025.02', SUV: 39000, 轿车: 35000, 小型车: 5500, 豪华SUV: 3500 },
-  { month: '2025.03', SUV: 40000, 轿车: 36000, 小型车: 6000, 豪华SUV: 4000 },
-  { month: '2025.04', SUV: 41000, 轿车: 37000, 小型车: 7000, 豪华SUV: 4500 },
-  { month: '2025.05', SUV: 42000, 轿车: 38000, 小型车: 8500, 豪华SUV: 5000 },
-];
-
-// 模拟的各厂商车辆类型占比趋势数据
-const vehicleTypeTrendData = [
-  { month: '2025.01', SUV: 45, 轿车: 40, 小型车: 7, 豪华SUV: 8 },
-  { month: '2025.02', SUV: 45, 轿车: 40, 小型车: 7, 豪华SUV: 8 },
-  { month: '2025.03', SUV: 44, 轿车: 40, 小型车: 8, 豪华SUV: 8 },
-  { month: '2025.04', SUV: 44, 轿车: 40, 小型车: 8, 豪华SUV: 8 },
-  { month: '2025.05', SUV: 43, 轿车: 39, 小型车: 9, 豪华SUV: 9 },
-];
+import { getCurrentCarModelData, carCompanies, formatMonthWithYear } from '../mocks/data';
+import VehicleTypeTop10Table from '../components/VehicleTypeTop10Table';
 
 export default function VehicleTypeSales() {
   const { theme, toggleTheme } = useTheme();
@@ -55,11 +20,164 @@ export default function VehicleTypeSales() {
   };
   
   const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [vehicleTypeData, setVehicleTypeData] = useState<any[]>([]); // 车辆类型销量占比数据
+  const [manufacturerVehicleTypeData, setManufacturerVehicleTypeData] = useState<any[]>([]); // 各厂商车辆类型分布数据
+  const [monthlyVehicleTypeData, setMonthlyVehicleTypeData] = useState<any[]>([]); // 月度车辆类型变化数据
+  const [vehicleTypeTrendData, setVehicleTypeTrendData] = useState<any[]>([]); // 车辆类型占比趋势数据
+  const [totalSales, setTotalSales] = useState<number>(0); // 总销量
 
   const handleDateRangeChange = (newDateRange: DateRange) => {
     setDateRange(newDateRange);
-    // 在实际应用中，这里会根据新的日期范围获取数据
-    console.log('Date range changed:', newDateRange);
+  };
+
+  // 当日期范围变化时获取数据
+  useEffect(() => {
+    const loadData = () => {
+      setIsLoading(true);
+      try {
+        // 从文件中获取数据
+        const carModelData = getCurrentCarModelData(dateRange);
+        
+        // 处理数据，生成所需的图表数据
+        processData(carModelData);
+      } catch (error) {
+        console.error('获取数据失败:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [dateRange]);
+
+  // 处理数据，生成图表所需的数据格式
+  const processData = (carModelData: CarModelData[]) => {
+    // 1. 计算车辆类型销量占比
+    const vehicleTypeSales: Record<string, number> = {};
+    
+    // 计算每种车辆类型的销量
+    carModelData.forEach(model => {
+      vehicleTypeSales[model.vehicleType] = (vehicleTypeSales[model.vehicleType] || 0) + model.sales;
+    });
+    
+    // 定义车辆类型的颜色映射
+    const vehicleTypeColors: Record<string, string> = {
+      'SUV': '#3b82f6',
+      '轿车': '#10b981',
+      '小型车': '#f59e0b',
+      '豪华SUV': '#8b5cf6',
+      '未知': '#8884d8'
+    };
+    
+    // 转换为图表数据格式
+    const vehicleData = Object.keys(vehicleTypeSales)
+      .filter(type => type !== '未知' && vehicleTypeSales[type] > 0)
+      .map(type => ({
+        name: type,
+        value: vehicleTypeSales[type],
+        color: vehicleTypeColors[type] || '#8884d8'
+      }))
+      .sort((a, b) => b.value - a.value);
+    
+    // 计算总销量
+    const total = vehicleData.reduce((sum, item) => sum + item.value, 0);
+    
+    // 2. 计算各厂商车辆类型分布
+    const manufacturerMap = new Map<string, Record<string, number>>();
+    
+    // 按厂商和车辆类型分组统计销量
+    carModelData.forEach(model => {
+      if (!manufacturerMap.has(model.manufacturer)) {
+        manufacturerMap.set(model.manufacturer, {});
+      }
+      
+      const manufacturerData = manufacturerMap.get(model.manufacturer)!;
+      manufacturerData[model.vehicleType] = (manufacturerData[model.vehicleType] || 0) + model.sales;
+    });
+    
+    // 转换为图表数据格式
+    const manufacturerData = Array.from(manufacturerMap.entries())
+      .map(([manufacturer, vehicleData]) => {
+        // 获取厂商颜色
+        const company = carCompanies.find(c => c.name === manufacturer);
+        const companyColor = company?.color || '#8b5cf6';
+        
+        // 初始化所有车辆类型为0
+        const data: any = { manufacturer, color: companyColor };
+        Object.keys(vehicleTypeSales).forEach(type => {
+          if (type !== '未知') {
+            data[type] = vehicleData[type] || 0;
+          }
+        });
+        return data;
+      })
+      .sort((a, b) => {
+        // 按总销量排序
+        const salesA = Object.keys(a)
+          .filter(key => key !== 'manufacturer' && key !== 'color')
+          .reduce((sum, key) => sum + a[key], 0);
+        const salesB = Object.keys(b)
+          .filter(key => key !== 'manufacturer' && key !== 'color')
+          .reduce((sum, key) => sum + b[key], 0);
+        return salesB - salesA;
+      });
+    
+    // 3. 计算月度车辆类型变化
+    const monthlyMap = new Map<string, Record<string, number>>();
+    
+    // 按月份和车辆类型分组统计销量
+    carModelData.forEach(model => {
+      const monthKey = `${model.year}-${model.month}`;
+      if (!monthlyMap.has(monthKey)) {
+        monthlyMap.set(monthKey, {});
+      }
+      
+      const monthData = monthlyMap.get(monthKey)!;
+      monthData[model.vehicleType] = (monthData[model.vehicleType] || 0) + model.sales;
+    });
+    
+    // 转换为图表数据格式并按时间排序
+    const monthlyData = Array.from(monthlyMap.entries())
+      .map(([monthKey, vehicleData]) => {
+        const [year, month] = monthKey.split('-');
+        const formattedMonth = formatMonthWithYear(month, parseInt(year));
+        
+        // 初始化所有车辆类型为0
+        const data: any = { month: formattedMonth };
+        Object.keys(vehicleTypeSales).forEach(type => {
+          if (type !== '未知') {
+            data[type] = vehicleData[type] || 0;
+          }
+        });
+        return data;
+      })
+      .sort((a, b) => {
+        // 按月份排序
+        return a.month.localeCompare(b.month);
+      });
+    
+    // 4. 计算车辆类型占比趋势（虽然不直接显示，但需要保留数据结构以便tooltip计算占比）
+    const trendData = monthlyData.map(monthData => {
+      const monthTotal = Object.keys(monthData)
+        .filter(key => key !== 'month')
+        .reduce((sum, key) => sum + monthData[key], 0);
+      
+      const data: any = { month: monthData.month };
+      Object.keys(monthData).forEach(key => {
+        if (key !== 'month' && monthTotal > 0) {
+          data[key] = parseFloat(((monthData[key] / monthTotal) * 100).toFixed(1));
+        }
+      });
+      return data;
+    });
+    
+    // 更新状态
+    setVehicleTypeData(vehicleData);
+    setManufacturerVehicleTypeData(manufacturerData);
+    setMonthlyVehicleTypeData(monthlyData);
+    setVehicleTypeTrendData(trendData);
+    setTotalSales(total);
   };
 
   // 页面容器动画配置
@@ -88,32 +206,37 @@ export default function VehicleTypeSales() {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      
+      // 计算该月份的总销量
+      const totalSalesInMonth = payload.reduce((sum: number, entry: any) => sum + entry.value, 0);
+      
       return (
         <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900 dark:text-white">{data.name || data.manufacturer}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="flex items-center mt-1">
-              <span 
-                className="w-3 h-3 inline-block mr-2" 
-                style={{ backgroundColor: entry.color }}
-              ></span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">{entry.name}:</span>
-              <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">
-                {typeof entry.value === 'number' && entry.value < 100 
-                  ? `${entry.value}%` 
-                  : `${formatNumber(entry.value)} 辆`
-                }
-              </span>
-            </p>
-          ))}
+          {payload.map((entry: any, index: number) => {
+            // 计算百分比
+            const percentage = ((entry.value / totalSalesInMonth) * 100).toFixed(1);
+            
+            return (
+              <p key={index} className="flex items-center mt-1">
+                <span 
+                  className="w-3 h-3 inline-block mr-2" 
+                  style={{ backgroundColor: entry.color }}
+                ></span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">{entry.name}:</span>
+                <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">
+                  {formatNumber(entry.value)} 辆 ({percentage}%)
+                </span>
+              </p>
+            );
+          })}
         </div>
       );
     }
     return null;
   };
 
-  // 计算总销量
-  const totalSales = vehicleTypeData.reduce((sum, item) => sum + item.value, 0);
+
 
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 ${theme}`}>
@@ -177,38 +300,55 @@ export default function VehicleTypeSales() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">车辆类型销量占比</h3>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={vehicleTypeData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="value"
-                    animationDuration={1500}
-                    animationBegin={200}
-                  >
-                    {vehicleTypeData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.color} 
-                        stroke="#fff"
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+                <div className="h-[350px]">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-gray-500 dark:text-gray-400 flex items-center">
+                        <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+                        <span>加载数据中...</span>
+                      </div>
+                    </div>
+                  ) : vehicleTypeData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={vehicleTypeData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={120}
+                          fill="#8884d8"
+                          dataKey="value"
+                          animationDuration={1500}
+                          animationBegin={200}
+                        >
+                          {vehicleTypeData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.color} 
+                              stroke="#fff"
+                              strokeWidth={2}
+                            />
+                          ))}
+                        </Pie>
+                         <Tooltip 
+                          content={<CustomTooltip />} 
+                          contentStyle={{ pointerEvents: 'none' }}
+                          offset={100}
+                        />
+                        <Legend 
+                          verticalAlign="bottom" 
+                          height={36}
+                          formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500 dark:text-gray-400">暂无数据</p>
+                    </div>
+                  )}
+                </div>
           </motion.div>
 
           {/* 月度车辆类型销量趋势 */}
@@ -219,203 +359,146 @@ export default function VehicleTypeSales() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">月度车辆类型销量趋势</h3>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={monthlyVehicleTypeData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fill: '#6b7280' }} 
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#6b7280' }} 
-                    axisLine={{ stroke: '#e5e7eb' }}
-                    tickFormatter={(value) => formatNumber(value)}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: 10 }}
-                    formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
-                  />
-                  <Line type="monotone" dataKey="SUV" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="轿车" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="小型车" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="豪华SUV" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+                <div className="h-[350px]">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-gray-500 dark:text-gray-400 flex items-center">
+                        <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+                        <span>加载数据中...</span>
+                      </div>
+                    </div>
+                  ) : monthlyVehicleTypeData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={monthlyVehicleTypeData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="month" 
+                          tick={{ fill: '#6b7280' }} 
+                          axisLine={{ stroke: '#e5e7eb' }}
+                        />
+                        <YAxis 
+                          tick={{ fill: '#6b7280' }} 
+                          axisLine={{ stroke: '#e5e7eb' }}
+                          tickFormatter={(value) => formatNumber(value)}
+                        />
+                         <Tooltip 
+                          content={<CustomTooltip />} 
+                          contentStyle={{ pointerEvents: 'none' }}
+                          offset={100}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: 10 }}
+                          formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
+                        />
+                        {vehicleTypeData.map((vehicleType) => (
+                          <Line 
+                            key={vehicleType.name}
+                            type="monotone" 
+                            dataKey={vehicleType.name} 
+                            stroke={vehicleType.color} 
+                            strokeWidth={2} 
+                            dot={{ r: 4 }} 
+                            activeDot={{ r: 8 }}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500 dark:text-gray-400">暂无数据</p>
+                    </div>
+                  )}
+                </div>
           </motion.div>
         </div>
 
-        {/* 各厂商车辆类型分布和车辆类型占比趋势 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* 各厂商车辆类型分布 */}
-          <motion.div 
+  {/* 各厂商车辆类型分布 */}
+  <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
+    {/* 各厂商车辆类型分布 */}
+    <motion.div 
             className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">各厂商车辆类型分布</h3>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={manufacturerVehicleTypeData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  layout="vertical"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                  <XAxis 
-                    type="number"
-                    tick={{ fill: '#6b7280' }} 
-                    axisLine={{ stroke: '#e5e7eb' }}
-                    tickFormatter={(value) => formatNumber(value)}
-                  />
-                  <YAxis 
-                    dataKey="manufacturer" 
-                    type="category"
-                    tick={{ fill: '#6b7280' }} 
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: 10 }}
-                    formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
-                  />
-                  <Bar dataKey="SUV" stackId="a" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="轿车" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="小型车" stackId="a" fill="#f59e0b" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="豪华SUV" stackId="a" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                <div className="h-[350px]">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-gray-500 dark:text-gray-400 flex items-center">
+                        <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+                        <span>加载数据中...</span>
+                      </div>
+                    </div>
+                  ) : manufacturerVehicleTypeData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={manufacturerVehicleTypeData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        layout="vertical"
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                        <XAxis 
+                          type="number"
+                          tick={{ fill: '#6b7280' }} 
+                          axisLine={{ stroke: '#e5e7eb' }}
+                          tickFormatter={(value) => formatNumber(value)}
+                        />
+                        <YAxis 
+                          dataKey="manufacturer" 
+                          type="category"
+                          tick={{ fill: '#6b7280' }} 
+                          axisLine={{ stroke: '#e5e7eb' }}
+                        />
+                         <Tooltip 
+                          content={<CustomTooltip />} 
+                          contentStyle={{ pointerEvents: 'none' }}
+                          offset={100}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: 10 }}
+                          formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
+                        />
+                        {vehicleTypeData.map((vehicleType) => (
+                          <Bar 
+                            key={vehicleType.name}
+                            dataKey={vehicleType.name} 
+                            stackId="a" 
+                            fill={vehicleType.color} 
+                            radius={[0, 4, 4, 0]} 
+                          />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500 dark:text-gray-400">暂无数据</p>
+                    </div>
+                  )}
+                </div>
           </motion.div>
 
-          {/* 车辆类型占比趋势 */}
-          <motion.div 
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">车辆类型占比趋势</h3>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={vehicleTypeTrendData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fill: '#6b7280' }} 
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#6b7280' }} 
-                    axisLine={{ stroke: '#e5e7eb' }}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: 10 }}
-                    formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
-                  />
-                  <Line type="monotone" dataKey="SUV" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="轿车" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="小型车" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="豪华SUV" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
+           {/* 空缺位置 - 原车辆类型占比趋势模块已删除 */}
         </div>
 
-        {/* 车辆类型销量明细表格 */}
+        {/* 车辆类型区分销量TOP10模块 */}
         <motion.div 
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 mb-8"
+          className="mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">车辆类型销量明细</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    车辆类型
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    销量
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    占比
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    主要厂商
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {vehicleTypeData.map((vehicleType) => {
-                  const percentage = ((vehicleType.value / totalSales) * 100).toFixed(1);
-                  let mainManufacturer = '';
-                  
-                  // 查找该车辆类型的主要厂商
-                  if (vehicleType.name === 'SUV') mainManufacturer = '特斯拉、比亚迪、大众、本田、理想';
-                  else if (vehicleType.name === '轿车') mainManufacturer = '特斯拉、比亚迪、大众';
-                  else if (vehicleType.name === '小型车') mainManufacturer = '比亚迪、吉利';
-                  else if (vehicleType.name === '豪华SUV') mainManufacturer = '比亚迪、吉利';
-                  
-                  return (
-                    <tr key={vehicleType.name} className="bg-white dark:bg-gray-800">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-8 w-8 rounded-full flex items-center justify-center mr-3" style={{ backgroundColor: vehicleType.color }}>
-                            <i className={`fa-solid text-white ${
-                              vehicleType.name.includes('SUV') ? 'fa-truck' :
-                              vehicleType.name === '轿车' ? 'fa-car' :
-                              'fa-car-side'
-                            }`}></i>
-                          </div>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">{vehicleType.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{formatNumber(vehicleType.value)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                            <div 
-                              className="h-2.5 rounded-full" 
-                              style={{ width: `${percentage}%`, backgroundColor: vehicleType.color }}
-                            ></div>
-                          </div>
-                          <span className="ml-2 text-sm text-gray-900 dark:text-white">{percentage}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">{mainManufacturer}</div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <VehicleTypeTop10Table dateRange={dateRange} />
         </motion.div>
 
         {/* 页脚 */}
         <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800">
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            © 2026 车企销量数据分析平台 | 数据更新时间: {new Date().toLocaleDateString()}
-          </p>
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                  © 2026 车企销量数据分析平台 | 数据更新时间: {new Date().toLocaleDateString()} | 数据来源: 文件数据
+                </p>
         </div>
       </motion.div>
     </div>

@@ -192,6 +192,12 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
     setHoveredCompany(null);
   };
 
+  // 格式化数字，添加千位分隔符
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined || num === null) return '0';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
   // 自定义圆饼图Tooltip
   const PieCustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -201,6 +207,8 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
           <p className="font-medium text-gray-900 dark:text-white">{data.company}</p>
           <p className="text-sm text-gray-600 dark:text-gray-300">市场份额:</p>
           <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">{data.share}%</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">总销量:</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{formatNumber(data.sales)} 辆</p>
         </div>
       );
     }
@@ -210,12 +218,32 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
   // 自定义柱状图Tooltip
   const BarCustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // 计算当前月份的总销量，用于计算实际销量
+      let totalSalesForMonth = 0;
+      
+      // 遍历payload获取所有值的总和（百分比总和应该约等于100%）
+      payload.forEach((entry: any) => {
+        totalSalesForMonth += entry.value;
+      });
+      
+      // 获取当前月份的实际总销量（从月度销售数据中查找）
+      const monthlySalesData = getCurrentMonthlySalesData(dateRange);
+      const [year, month] = label.split('.');
+      const monthStr = `${parseInt(month)}月`;
+      const actualMonthlySales = monthlySalesData
+        .filter(item => item.month === monthStr && item.year === parseInt(year))
+        .reduce((sum, item) => sum + item.sales, 0);
+      
       return (
         <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900 dark:text-white">{label}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">总销量: {formatNumber(actualMonthlySales)} 辆</p>
           {payload.map((entry: any, index: number) => {
             // 检查当前条目是否是悬停的车企
             const isHovered = hoveredCompany && entry.name === hoveredCompany;
+            
+            // 计算实际销量
+            const actualSales = Math.round((entry.value / 100) * actualMonthlySales);
             
             return (
               <p 
@@ -230,7 +258,7 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
                   {entry.name}:
                 </span>
                 <span className={`ml-2 text-sm ${isHovered ? 'font-bold text-blue-600 dark:text-blue-400' : 'font-medium text-gray-900 dark:text-white'}`}>
-                  {entry.value}%
+                  {entry.value}% ({formatNumber(actualSales)} 辆)
                 </span>
               </p>
             );
@@ -304,20 +332,50 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
       {/* 圆饼图 - 总销量市场份额 */}
       <div className="mb-8">
         <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">总销量市场份额</h4>
-        <div className="h-[350px]">
-          {pieChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+       <div className="h-[400px]">
+           {pieChartData.length > 0 ? (
+             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={pieChartData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="share"
-                  animationDuration={1500}
-                  animationBegin={200}
+                   labelLine={true}
+                   outerRadius={120}
+                   fill="#8884d8"
+                   dataKey="share"
+                   animationDuration={1500}
+                   animationBegin={200}
+                   label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, payload }) => {
+                     // 使用payload中的原始数据
+                     const companyData = payload || pieChartData[index];
+                     if (!companyData) return null;
+                     
+                     const name = companyData.company || '未知厂商';
+                     const percentage = `${(percent * 100).toFixed(1)}%`;
+                     // 确保使用正确的销量数据
+                     const sales = companyData.sales > 0 ? formatNumber(companyData.sales) : '0';
+                     
+                     // 计算标签位置，避免重叠
+                     const radius = innerRadius + (outerRadius - innerRadius) * 1.3;
+                     const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                     const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                     
+                     return (
+                       <text
+                         x={x}
+                         y={y}
+                         fill="#333"
+                         textAnchor={x > cx ? 'start' : 'end'}
+                         dominantBaseline="central"
+                         fontSize={12}
+                         fontWeight="500"
+                         className="whitespace-nowrap"
+                       >
+                         {`${name}: ${percentage} (${sales}辆)`}
+                       </text>
+                     );
+                   }}
                 >
                   {pieChartData.map((entry, index) => (
                     <Cell 
@@ -328,16 +386,15 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
                     />
                   ))}
                 </Pie>
-                 <Tooltip content={<PieCustomTooltip />} />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36}
-                  formatter={(value) => {
-                    // 确保显示的是公司名称，而不是value字段
-                    const companyData = pieChartData.find(item => item.company === value);
-                    return <span className="text-sm text-gray-700 dark:text-gray-300">{companyData?.company || value}</span>;
-                  }}
-                />
+      <Tooltip 
+        content={<PieCustomTooltip />} 
+         contentStyle={{ pointerEvents: 'none' }}
+        offset={100} // 调整偏移量值为100
+        position={(point) => ({ 
+          x: point.x > window.innerWidth / 2 ? point.x - 200 : point.x + 30, // 调整x轴偏移
+          y: point.y > window.innerHeight / 2 ? point.y - 100 : point.y + 30 // 调整y轴偏移
+        })}
+      />
               </PieChart>
             </ResponsiveContainer>
           ) : (
@@ -376,7 +433,11 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
                   axisLine={{ stroke: '#e5e7eb' }}
                   tickFormatter={(value) => `${value}%`}
                 />
-                <Tooltip content={<BarCustomTooltip />} />
+                  <Tooltip 
+                    content={<BarCustomTooltip />} 
+                     contentStyle={{ pointerEvents: 'none' }}
+                    offset={100}
+                  />
                 <Legend 
                   wrapperStyle={{ paddingTop: 10 }}
                   formatter={(value) => <span className={`text-sm ${hoveredCompany === value ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>{value}</span>}
@@ -442,7 +503,11 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
                   axisLine={{ stroke: '#e5e7eb' }}
                   tickFormatter={(value) => `${value}%`}
                 />
-                <Tooltip content={<LineCustomTooltip />} />
+                  <Tooltip 
+                    content={<LineCustomTooltip />} 
+                     contentStyle={{ pointerEvents: 'none' }}
+                    offset={100}
+                  />
                 <Legend 
                   wrapperStyle={{ paddingTop: 10 }}
                   formatter={(value) => <span className={`text-sm ${hoveredCompany === value ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>{value}</span>}
@@ -512,7 +577,11 @@ const MarketShareChart: React.FC<MarketShareChartProps> = ({ className = '', dat
                   axisLine={{ stroke: '#e5e7eb' }}
                   tickFormatter={(value) => `${value}%`}
                 />
-                <Tooltip content={<LineCustomTooltip />} />
+                  <Tooltip 
+                    content={<LineCustomTooltip />} 
+                     contentStyle={{ pointerEvents: 'none' }}
+                    offset={100}
+                  />
                 <Legend 
                   wrapperStyle={{ paddingTop: 10 }}
                   formatter={(value) => <span className={`text-sm ${hoveredCompany === value ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>{value}</span>}

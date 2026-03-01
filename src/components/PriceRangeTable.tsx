@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { DateRange } from '../types';
-import { getCurrentCarModelData, carCompanies, monthlySalesData2024 } from '../mocks/data';
+import { getCurrentCarModelData, carCompanies, monthlySalesData2024, getLatestModelPrice } from '../mocks/data';
 import CarCompanySelector from './CarCompanySelector';
 import { formatMonthWithYear } from '../mocks/data';
 
@@ -210,33 +210,43 @@ const PriceRangeTable: React.FC<PriceRangeTableProps> = ({ className = '', dateR
       });
     });
     
-     // 统计各车型的销量并累加到对应的车企、价格区间和月份
-    carModelData.forEach(model => {
-      if (!selectedCompanyNames.includes(model.manufacturer)) return;
-      
-      const price = model.minPrice; // 使用最低价格作为分类依据
-      const monthKey = formatMonthWithYear(model.month, model.year);
-      
-      // 查找价格所在的区间
-      const priceRange = PRICE_RANGES.find(range => 
-        price >= range.min && price < range.max
-      );
-      
-      if (priceRange) {
-        // 查找对应的表格行
-        const tableRow = tableDataArray.find(row => 
-          row.company === model.manufacturer && row.priceRange === priceRange.name
+           // 统计各车型的销量并累加到对应的车企、价格区间和月份
+      carModelData.forEach(model => {
+        if (!selectedCompanyNames.includes(model.manufacturer)) return;
+        
+        // 使用时间范围内最新的价格作为分类依据
+        const latestPrice = getLatestModelPrice(
+          carModelData,
+          model.manufacturer,
+          model.brand,
+          model.modelName,
+          dateRange
         );
         
-        if (tableRow) {
-          // 累加到对应月份
-          tableRow[monthKey] = (tableRow[monthKey] as number) + model.sales;
+        // 使用最新价格作为分类依据
+          const price = latestPrice?.minPrice || model.minPrice;
+          const monthKey = formatMonthWithYear(model.month, model.year);
+        
+        // 查找价格所在的区间
+        const priceRange = PRICE_RANGES.find(range => 
+          price >= range.min && price < range.max
+        );
+        
+        if (priceRange) {
+          // 查找对应的表格行
+          const tableRow = tableDataArray.find(row => 
+            row.company === model.manufacturer && row.priceRange === priceRange.name
+          );
           
-          // 累加到总销量
-          tableRow.totalSales = (tableRow.totalSales as number) + model.sales;
+          if (tableRow) {
+            // 累加到对应月份
+            tableRow[monthKey] = (tableRow[monthKey] as number) + model.sales;
+            
+            // 累加到总销量
+            tableRow.totalSales = (tableRow.totalSales as number) + model.sales;
+          }
         }
-      }
-    });
+      });
     
     // 计算每个厂商每个月的总销量
     const companyMonthlyTotals: Record<string, Record<string, number>> = {};

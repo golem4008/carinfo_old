@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import { DateRange, CarCompany } from '../types';
-import { getCurrentCarModelData, carCompanies } from '../mocks/data';
+import { getCurrentCarModelData, carCompanies, getLatestModelPrice } from '../mocks/data';
 
 interface PriceRangePercentChartProps {
   className?: string;
@@ -38,10 +38,18 @@ const PriceRangePercentChart: React.FC<PriceRangePercentChartProps> = ({ classNa
     
     // 首先按月统计所有数据
     carModelData.forEach(model => {
-      // 只处理选中车企的数据
+     // 只处理选中车企的数据
       if (model.manufacturer !== selectedCompany.name) return;
       
-      const price = model.minPrice; // 使用最低价格作为分类依据
+      // 使用时间范围内最新的价格作为分类依据
+      const latestPrice = getLatestModelPrice(
+        carModelData,
+        model.manufacturer,
+        model.brand,
+        model.modelName,
+        dateRange
+      );
+      const price = latestPrice?.minPrice || model.minPrice;
       // 格式化为 "2025.01" 样式的月份
       const monthKey = `${model.year}.${String(parseInt(model.month)).padStart(2, '0')}`;
       
@@ -181,7 +189,11 @@ const PriceRangePercentChart: React.FC<PriceRangePercentChartProps> = ({ classNa
                 axisLine={{ stroke: '#e5e7eb' }}
                 tickFormatter={(value) => `${value}%`}
               />
-              <Tooltip content={<CustomTooltip />} />
+      <Tooltip 
+        content={<CustomTooltip />} 
+        contentStyle={{ pointerEvents: 'none' }}
+         offset={100} // 调整偏移量值为100
+      />
               <Legend 
                 wrapperStyle={{ paddingTop: 10 }}
                 formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}

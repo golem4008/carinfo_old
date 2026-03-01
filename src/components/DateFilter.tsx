@@ -9,8 +9,8 @@ interface DateFilterProps {
 
 const DateFilter: React.FC<DateFilterProps> = ({
   onDateRangeChange,
-  defaultStartDate = '2025-01-01',
-  defaultEndDate = '2025-12-31'
+  defaultStartDate = '2024-12-01',
+  defaultEndDate = '2026-02-01'
 }) => {
   // 解析默认日期中的年和月
   const parseDate = (dateStr: string): { year: string; month: string } => {
@@ -29,8 +29,8 @@ const DateFilter: React.FC<DateFilterProps> = ({
   // 获取当前年份
   const currentYear = new Date().getFullYear();
   
-  // 生成年份选项（从当前年份往前5年到往后2年）
-  const yearOptions = Array.from({ length: 8 }, (_, i) => (currentYear - 5 + i).toString());
+  // 生成年份选项（从2024年到2026年，覆盖数据范围）
+  const yearOptions = ['2024', '2025', '2026'];
   
   // 生成月份选项
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -86,65 +86,67 @@ const DateFilter: React.FC<DateFilterProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center space-x-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-      {/* 开始日期选择 */}
-      <div className="flex items-center space-x-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-          开始年月:
-        </label>
-        <div className="flex space-x-2">
-          <select
-            value={startYear}
-            onChange={handleStartYearChange}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {yearOptions.map(year => (
-              <option key={`start-year-${year}`} value={year}>{year}年</option>
-            ))}
-          </select>
-          <select
-            value={startMonth}
-            onChange={handleStartMonthChange}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {monthOptions.map(month => (
-              <option key={`start-month-${month}`} value={month}>{month}月</option>
-            ))}
-          </select>
+    <div className="flex flex-wrap items-center justify-between space-x-4 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+      <div className="flex flex-wrap items-center w-full sm:w-auto space-x-4">
+        {/* 开始日期选择 */}
+        <div className="flex items-center space-x-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+            开始年月:
+          </label>
+          <div className="flex space-x-2">
+            <select
+              value={startYear}
+              onChange={handleStartYearChange}
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {yearOptions.map(year => (
+                <option key={`start-year-${year}`} value={year}>{year}年</option>
+              ))}
+            </select>
+            <select
+              value={startMonth}
+              onChange={handleStartMonthChange}
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {monthOptions.map(month => (
+                <option key={`start-month-${month}`} value={month}>{month}月</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* 结束日期选择 */}
+        <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+            结束年月:
+          </label>
+          <div className="flex space-x-2">
+            <select
+              value={endYear}
+              onChange={handleEndYearChange}
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {yearOptions.map(year => (
+                <option key={`end-year-${year}`} value={year}>{year}年</option>
+              ))}
+            </select>
+            <select
+              value={endMonth}
+              onChange={handleEndMonthChange}
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {monthOptions.map(month => (
+                <option key={`end-month-${month}`} value={month}>{month}月</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
-
-      {/* 结束日期选择 */}
-      <div className="flex items-center space-x-2 mt-2 sm:mt-0">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-          结束年月:
-        </label>
-        <div className="flex space-x-2">
-          <select
-            value={endYear}
-            onChange={handleEndYearChange}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {yearOptions.map(year => (
-              <option key={`end-year-${year}`} value={year}>{year}年</option>
-            ))}
-          </select>
-          <select
-            value={endMonth}
-            onChange={handleEndMonthChange}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {monthOptions.map(month => (
-              <option key={`end-month-${month}`} value={month}>{month}月</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
+      
       {/* 确定按钮 */}
       <button
         onClick={handleConfirm}
-        className="mt-2 sm:mt-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow hover:shadow-md"
+        className="mt-2 sm:mt-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow hover:shadow-md ml-auto sm:ml-0"
       >
         确定
       </button>

@@ -13,46 +13,76 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-  /* 表格表头冻结样式增强 */
- thead {
-   position: sticky;
-   top: 0;
-   z-index: 100;
-   background-color: #f3f4f6;
-   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-   border-bottom: 1px solid #e5e7eb;
- }
+    /* 表格容器样式增强 */
+    .overflow-x-auto {
+      border-radius: 0.5rem;
+    }
 
- .dark thead {
-   background-color: #1f2937;
-   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-   border-bottom: 1px solid #374151;
- }
+    /* 表格行悬停效果 */
+    tbody tr:hover {
+      background-color: #f9fafb;
+    }
 
- /* 确保表格单元格不透明，避免内容穿透 */
- th, td {
-   background-clip: padding-box;
-   background-color: inherit;
- }
+    .dark tbody tr:hover {
+      background-color: #1f2937;
+    }
+    
+    /* 自定义滑块样式 */
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+    }
 
- /* 表格容器样式增强 */
- .overflow-x-auto {
-   border-radius: 0.5rem;
- }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+    }
+   
+    /* 确保表头在滚动时保持在顶部 */
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
 
- /* 表格行悬停效果 */
- tbody tr:hover {
-   background-color: #f9fafb;
- }
-
- .dark tbody tr:hover {
-   background-color: #1f2937;
- }
-
- /* 确保表格在小屏幕上也能正常显示 */
- @media (max-width: 768px) {
-   .overflow-x-auto {
-     -webkit-overflow-scrolling: touch;
-     scroll-behavior: smooth;
-   }
- }
+  /* 确保表格在小屏幕上也能正常显示 */
+  @media (max-width: 768px) {
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+  }
+  
+  /* 筛选器响应式样式 */
+  @media (max-width: 1024px) {
+    .flex-wrap > div {
+      min-width: calc(50% - 0.5rem);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .flex-wrap > div {
+      min-width: 100%;
+    }
+    
+    .DateFilter {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .DateFilter button {
+      margin-top: 0.5rem;
+    }
+  }

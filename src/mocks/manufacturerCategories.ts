@@ -7,7 +7,7 @@ export interface ManufacturerCategories {
 // 厂商分类配置数据
 export const manufacturerCategories: ManufacturerCategories = {
   traditional: ['大众', '丰田', '本田'],
-  newEnergy: ['特斯拉', '比亚迪', '吉利']
+  newEnergy: ['特斯拉', '比亚迪', '吉利', '理想']
 };
 
 // 可以根据需要扩展更多分类方法

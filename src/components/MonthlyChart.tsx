@@ -149,31 +149,34 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({ className = '', dateRange }
         />
       </div>
       
-	<div className="h-[400px] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
+	<div className="h-[350px] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
         {chartData.length > 0 ? (
-          <div className="min-w-[800px] h-full">
+          <div className="min-w-[1500px] h-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
                 onMouseLeave={handleChartMouseLeave}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fill: '#6b7280' }} 
+                  tick={{ fill: '#6b7280', fontSize: 12 }} 
                   axisLine={{ stroke: '#e5e7eb' }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
                 />
                 <YAxis 
-                  tick={{ fill: '#6b7280' }} 
+                  tick={{ fill: '#6b7280', fontSize: 12 }} 
                   axisLine={{ stroke: '#e5e7eb' }}
                   tickFormatter={(value) => formatNumber(value)}
                 />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: 10 }}
-                  formatter={(value) => <span className={`text-sm ${hoveredCompany === value ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>{value}</span>}
-                />
+      <Tooltip 
+        content={<CustomTooltip />} 
+        contentStyle={{ pointerEvents: 'none' }}
+        offset={100} // 调整偏移量值，根据需要增大或减小
+      />
                 {carCompanies.map((company) => {
                   // 检查公司是否被选中
                   const isSelected = selectedCompanies.some(selected => selected.id === company.id);
@@ -207,6 +210,28 @@ const MonthlyChart: React.FC<MonthlyChartProps> = ({ className = '', dateRange }
           </div>
         )}
       </div>
+      
+      {/* 固定图例 - 放在滚动容器之外 */}
+      {chartData.length > 0 && (
+        <div className="mt-4 flex justify-center flex-wrap gap-4">
+          {selectedCompanies.map((company) => (
+            <div 
+              key={company.id} 
+              className="flex items-center"
+              onMouseEnter={() => handleBarMouseEnter(company.name)}
+              onMouseLeave={handleBarMouseLeave}
+            >
+              <span 
+                className="w-3 h-3 inline-block mr-2" 
+                style={{ backgroundColor: company.color }}
+              ></span>
+              <span className={`text-sm ${hoveredCompany === company.name ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                {company.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       
       {/* 滚动提示 */}
       {chartData.length > 0 && (

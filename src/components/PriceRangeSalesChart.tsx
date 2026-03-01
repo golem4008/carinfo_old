@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
 import { DateRange } from '../types';
-import { getCurrentCarModelData } from '../mocks/data';
+import { getCurrentCarModelData, getLatestModelPrice } from '../mocks/data';
 
 interface PriceRangeSalesChartProps {
   className?: string;
@@ -49,9 +49,17 @@ const PriceRangeSalesChart: React.FC<PriceRangeSalesChartProps> = ({ className =
       });
     });
 
-    // 计算各车型的销量并累加到对应的价格区间
+     // 计算各车型的销量并累加到对应的价格区间
     carModelData.forEach(model => {
-      const price = model.minPrice; // 使用最低价格作为分类依据
+      // 使用时间范围内最新的价格作为分类依据
+      const latestPrice = getLatestModelPrice(
+        carModelData,
+        model.manufacturer,
+        model.brand,
+        model.modelName,
+        dateRange
+      );
+      const price = latestPrice?.minPrice || model.minPrice;
       
       // 查找价格所在的区间
       const priceRange = PRICE_RANGES.find(range => 
@@ -207,7 +215,11 @@ const PriceRangeSalesChart: React.FC<PriceRangeSalesChartProps> = ({ className =
                     />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomTooltip />} />
+        <Tooltip 
+          content={<CustomTooltip />} 
+          contentStyle={{ pointerEvents: 'none' }}
+        offset={100} // 调整偏移量值为100
+        />
                 <Legend 
                   verticalAlign="bottom" 
                   height={36}

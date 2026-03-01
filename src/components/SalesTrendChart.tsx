@@ -157,7 +157,11 @@ const SalesTrendChart: React.FC<SalesTrendChartProps> = ({ className = '', dateR
                 axisLine={{ stroke: '#e5e7eb' }}
                 tickFormatter={(value) => formatNumber(value)}
               />
-              <Tooltip content={<CustomTooltip />} />
+    <Tooltip 
+      content={<CustomTooltip />} 
+      contentStyle={{ pointerEvents: 'none' }}
+       offset={100} // 调整偏移量值为100
+    />
               <Legend 
                 wrapperStyle={{ paddingTop: 10 }}
                 formatter={(value) => <span className={`text-sm ${hoveredCompany === value ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>{value}</span>}

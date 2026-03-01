@@ -44,9 +44,9 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ currentView, dateRange }) =
       icon: 'fa-building',
       color: 'bg-indigo-500'
     },
-    {
+  {
       id: 'top-10-models',
-      title: '销量TOP10车型',
+      title: '车型销量',
       route: '/top-10-models',
       icon: 'fa-crown',
       color: 'bg-amber-500'
@@ -65,13 +65,13 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ currentView, dateRange }) =
       icon: 'fa-car-side',
       color: 'bg-red-500'
     },
-    {
-      id: 'new-energy-companies',
-      title: '新势力企业情况',
-      route: '/new-energy-companies',
-      icon: 'fa-leaf',
-      color: 'bg-emerald-500'
-    }
+     {
+        id: 'new-energy-companies',
+        title: '新势力品牌情况',
+        route: '/new-energy-companies',
+        icon: 'fa-leaf',
+        color: 'bg-emerald-500'
+      }
   ];
 
   const handleViewChange = (route: string) => {

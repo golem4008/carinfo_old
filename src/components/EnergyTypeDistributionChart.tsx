@@ -1,35 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatNumber } from '../lib/utils';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DateRange, CarCompany } from '../types';
-import { getCurrentCarModelData, getLatestModelPrice } from '../mocks/data';
+import { getCurrentCarModelData } from '../mocks/data';
+import { energyTypes } from '../mocks/energyTypes';
 
-interface CarCompanyByPriceRangeChartProps {
+interface EnergyTypeDistributionChartProps {
   className?: string;
   dateRange?: DateRange;
   selectedCompany: CarCompany;
 }
 
-// 定义价格区间
-const PRICE_RANGES = [
-  { name: '10万以下', min: 0, max: 10, color: '#3b82f6' },
-  { name: '10~15万', min: 10, max: 15, color: '#10b981' },
-  { name: '15~25万', min: 15, max: 25, color: '#f59e0b' },
-  { name: '25~35万', min: 25, max: 35, color: '#8b5cf6' },
-  { name: '35~50万', min: 35, max: 50, color: '#ec4899' },
-  { name: '50万以上', min: 50, max: Infinity, color: '#ef4444' }
-];
-
-const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = ({
+const EnergyTypeDistributionChart: React.FC<EnergyTypeDistributionChartProps> = ({
   className = '',
   dateRange,
   selectedCompany
 }) => {
   // 状态管理
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [modelCountData, setModelCountData] = useState<any[]>([]); // 价格区间车型数量数据
-  const [salesData, setSalesData] = useState<any[]>([]); // 价格区间销量数据
+  const [vehicleTypeData, setVehicleTypeData] = useState<any[]>([]); // 车辆能源类型占比数据
+  const [salesTypeData, setSalesTypeData] = useState<any[]>([]); // 能源类型销量占比数据
 
   // 加载和处理数据
   useEffect(() => {
@@ -95,36 +86,24 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
               {
                 manufacturer: selectedCompany.name,
                 brand: selectedCompany.name,
-                modelName: '经济型',
-                vehicleType: '轿车',
-                energyType: '燃油',
+                modelName: '主力车型A',
+                vehicleType: 'SUV',
+                energyType: '纯电',
                 sales: 5000,
-                minPrice: 10,
-                maxPrice: 15,
+                minPrice: 20,
+                maxPrice: 30,
                 month: '1月',
                 year: 2025
               },
               {
                 manufacturer: selectedCompany.name,
                 brand: selectedCompany.name,
-                modelName: '中型车',
+                modelName: '主力车型B',
                 vehicleType: '轿车',
-                energyType: '纯电',
+                energyType: '插混',
                 sales: 3000,
                 minPrice: 15,
                 maxPrice: 25,
-                month: '1月',
-                year: 2025
-              },
-              {
-                manufacturer: selectedCompany.name,
-                brand: selectedCompany.name,
-                modelName: '高端SUV',
-                vehicleType: 'SUV',
-                energyType: '插混',
-                sales: 2000,
-                minPrice: 35,
-                maxPrice: 50,
                 month: '1月',
                 year: 2025
               }
@@ -132,73 +111,57 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
           }
         }
         
-        // 计算价格区间车型数量和销量
-        const priceRangeCount: Record<string, number> = {};
-        const priceRangeSales: Record<string, number> = {};
+        // 计算车辆能源类型占比（按车型数量）
+        const energyTypeCount: Record<string, number> = {};
+        const energyTypeSales: Record<string, number> = {};
         const uniqueModels = new Set<string>(); // 用于存储唯一的车型标识
         
-        // 初始化所有价格区间为0
-        PRICE_RANGES.forEach(range => {
-          priceRangeCount[range.name] = 0;
-          priceRangeSales[range.name] = 0;
+        // 初始化所有能源类型为0
+        energyTypes.forEach(type => {
+          energyTypeCount[type.name] = 0;
+          energyTypeSales[type.name] = 0;
         });
         
-        // 计算每个价格区间的车型数量和销量
+        // 计算每个能源类型的车型数量和销量
         companyModels.forEach(model => {
-         // 确定车型属于哪个价格区间 - 使用时间范围内最新价格
-      const latestPrice = getLatestModelPrice(
-        carModelData,
-        model.manufacturer,
-        model.brand,
-        model.modelName,
-        dateRange
-      );
-      const minPrice = latestPrice?.minPrice || model.minPrice;
-      const maxPrice = latestPrice?.maxPrice || model.maxPrice;
-      const priceRange = PRICE_RANGES.find(range => 
-        minPrice >= range.min && maxPrice < range.max
-          );
-          
-          if (priceRange) {
-            // 计算车型数量（确保相同的车型只计算一次）
-            const modelKey = `${model.manufacturer}-${model.brand}-${model.modelName}`;
-            if (!uniqueModels.has(modelKey)) {
-              uniqueModels.add(modelKey);
-              priceRangeCount[priceRange.name] = (priceRangeCount[priceRange.name] || 0) + 1;
-            }
-            
-            // 计算销量
-            priceRangeSales[priceRange.name] = (priceRangeSales[priceRange.name] || 0) + model.sales;
+          // 计算车型数量（确保相同的车型只计算一次）
+          const modelKey = `${model.manufacturer}-${model.brand}-${model.modelName}`;
+          if (!uniqueModels.has(modelKey)) {
+            uniqueModels.add(modelKey);
+            energyTypeCount[model.energyType] = (energyTypeCount[model.energyType] || 0) + 1;
           }
+          
+          // 计算销量
+          energyTypeSales[model.energyType] = (energyTypeSales[model.energyType] || 0) + model.sales;
         });
         
         // 转换为图表数据格式
-        const modelData = Object.keys(priceRangeCount)
-          .filter(range => priceRangeCount[range] > 0)
-          .map(range => {
-            const rangeConfig = PRICE_RANGES.find(r => r.name === range);
+        const vehicleData = Object.keys(energyTypeCount)
+          .filter(type => type !== '未知' && energyTypeCount[type] > 0)
+          .map(type => {
+            const energyTypeConfig = energyTypes.find(et => et.name === type);
             return {
-              name: range,
-              value: priceRangeCount[range],
-              color: rangeConfig?.color || '#8884d8'
+              name: type,
+              value: energyTypeCount[type],
+              color: energyTypeConfig?.color || '#8884d8'
             };
           })
           .sort((a, b) => b.value - a.value);
         
-        const salesByRangeData = Object.keys(priceRangeSales)
-          .filter(range => priceRangeSales[range] > 0)
-          .map(range => {
-            const rangeConfig = PRICE_RANGES.find(r => r.name === range);
+        const salesData = Object.keys(energyTypeSales)
+          .filter(type => type !== '未知' && energyTypeSales[type] > 0)
+          .map(type => {
+            const energyTypeConfig = energyTypes.find(et => et.name === type);
             return {
-              name: range,
-              value: priceRangeSales[range],
-              color: rangeConfig?.color || '#8884d8'
+              name: type,
+              value: energyTypeSales[type],
+              color: energyTypeConfig?.color || '#8884d8'
             };
           })
           .sort((a, b) => b.value - a.value);
         
-        setModelCountData(modelData);
-        setSalesData(salesByRangeData);
+        setVehicleTypeData(vehicleData);
+        setSalesTypeData(salesData);
       } catch (error) {
         console.error('获取数据失败:', error);
       } finally {
@@ -227,12 +190,12 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
           </p>
           {payload[0].name === '销量' && (
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-              占比: {((data.value / salesData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%
+              占比: {((data.value / salesTypeData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%
             </p>
           )}
           {payload[0].name === '车型数量' && (
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-              占比: {((data.value / modelCountData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%
+              占比: {((data.value / vehicleTypeData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%
             </p>
           )}
         </div>
@@ -255,16 +218,16 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
       className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 ${className}`}
     >
       <div className="mb-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">车企价格区间分布</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">车企能源类型情况</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          分析{selectedCompany.name}的价格区间车型分布和销量分布
+          分析{selectedCompany.name}的能源类型分布情况
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* 第一个圆饼图：价格区间车型数量分布 */}
+        {/* 第一个圆饼图：车企所有车辆能源类型占比（按车型数量） */}
         <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-4">
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">价格区间车型数量分布</h4>
+          <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">车辆能源类型分布</h4>
           <div className="h-[200px]">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
@@ -273,11 +236,11 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
                   <span>加载数据中...</span>
                 </div>
               </div>
-            ) : modelCountData.length > 0 ? (
+            ) : vehicleTypeData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={modelCountData}
+                    data={vehicleTypeData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -289,7 +252,7 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
                     animationDuration={1500}
                     animationBegin={200}
                   >
-                    {modelCountData.map((entry, index) => (
+                    {vehicleTypeData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color} 
@@ -313,13 +276,13 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
             )}
           </div>
           <p className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
-            按车型数量统计的价格区间分布
+            按车型数量统计的能源类型分布
           </p>
         </div>
 
-        {/* 第二个圆饼图：价格区间销量分布 */}
+        {/* 第二个圆饼图：根据能源类型分类的车型销量占比 */}
         <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-4">
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">价格区间销量分布</h4>
+          <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">能源类型销量占比</h4>
           <div className="h-[200px]">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
@@ -328,11 +291,11 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
                   <span>加载数据中...</span>
                 </div>
               </div>
-            ) : salesData.length > 0 ? (
+            ) : salesTypeData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={salesData}
+                    data={salesTypeData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -344,7 +307,7 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
                     animationDuration={1500}
                     animationBegin={400}
                   >
-                    {salesData.map((entry, index) => (
+                    {salesTypeData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color} 
@@ -368,7 +331,7 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
             )}
           </div>
           <p className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
-            按销量统计的价格区间分布
+            按销量统计的能源类型分布
           </p>
         </div>
       </div>
@@ -377,11 +340,11 @@ const CarCompanyByPriceRangeChart: React.FC<CarCompanyByPriceRangeChartProps> = 
       <div className="mt-6 text-xs text-gray-500 dark:text-gray-400">
         <p>
           <i className="fa-solid fa-circle-info mr-1"></i>
-          图表展示{selectedCompany.name}的价格区间车型分布和销量分布情况。数据基于选定的时间范围。
+          图表展示{selectedCompany.name}的能源类型分布情况，包括车型数量分布和销量分布。数据基于选定的时间范围。
         </p>
       </div>
     </motion.div>
   );
 };
 
-export default CarCompanyByPriceRangeChart;
+export default EnergyTypeDistributionChart;

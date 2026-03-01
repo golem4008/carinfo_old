@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import { DateRange } from '../types';
-import { getCurrentCarModelData } from '../mocks/data';
+import { getCurrentCarModelData, getLatestModelPrice } from '../mocks/data';
 
 interface PriceRangeComparisonChartProps {
   className?: string;
@@ -49,9 +49,17 @@ const PriceRangeComparisonChart: React.FC<PriceRangeComparisonChartProps> = ({ c
     });
   });
 
-    // 统计销量
+     // 统计销量
     carModelData.forEach(model => {
-      const price = model.minPrice; // 使用最低价格作为分类依据
+      // 使用时间范围内最新的价格作为分类依据
+      const latestPrice = getLatestModelPrice(
+        carModelData,
+        model.manufacturer,
+        model.brand,
+        model.modelName,
+        dateRange
+      );
+      const price = latestPrice?.minPrice || model.minPrice;
       
        // 查找价格所在的区间
       const priceRange = PRICE_RANGES.find(range => 
@@ -148,7 +156,11 @@ const PriceRangeComparisonChart: React.FC<PriceRangeComparisonChartProps> = ({ c
                 axisLine={{ stroke: '#e5e7eb' }}
                 tickFormatter={(value) => formatNumber(value)}
               />
-              <Tooltip content={<CustomTooltip />} />
+      <Tooltip 
+        content={<CustomTooltip />} 
+        contentStyle={{ pointerEvents: 'none' }}
+         offset={100} // 调整偏移量值为100
+      />
               <Legend 
                 wrapperStyle={{ paddingTop: 10 }}
                 formatter={(value) => <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>}
