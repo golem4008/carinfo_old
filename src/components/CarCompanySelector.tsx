@@ -92,18 +92,13 @@ const CarCompanySelector: React.FC<CarCompanySelectorProps> = ({
                   disabled={selectedCompanies.length === 1 && selectedCompanies[0].id === company.id}
                 />
                 <div className="ml-3 flex items-center">
-                <img
-                  src={company.logo}
-                  alt={company.name}
-                  className="w-6 h-6 rounded-full mr-2"
-                  onError={(e) => {
-                    // 如果图片加载失败，使用图标替代
-                    const target = e.target as HTMLImageElement;
-                    target.src = '';
-                    target.alt = company.name;
-                    target.style.display = 'none';
-                  }}
-                />
+                 {/* 不显示公司logo，直接使用占位元素 */}
+                 <div 
+                   className="w-6 h-6 rounded-full mr-2 flex items-center justify-center"
+                   style={{ backgroundColor: company.color }}
+                 >
+                   <span className="text-white text-xs">{company.name[0]}</span>
+                 </div>
                   {!company.logo && (
                     <div 
                       className="w-6 h-6 rounded-full mr-2 flex items-center justify-center"

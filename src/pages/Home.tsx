@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
 import { DateRange } from '../types';
@@ -10,6 +10,7 @@ import SalesTable from '../components/SalesTable';
 import DateFilter from '../components/DateFilter';
 import ViewSelector from '../components/ViewSelector';
 import { useLocation } from 'react-router-dom';
+import { initializeData } from '../mocks/data';
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
@@ -22,6 +23,7 @@ export default function Home() {
   };
   
   const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleDateRangeChange = (newDateRange: DateRange) => {
     setDateRange(newDateRange);
@@ -46,13 +48,28 @@ export default function Home() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
 
+  // 添加事件监听器，监听数据加载完成事件
+  useEffect(() => {
+    const handleDataLoaded = () => {
+      setIsLoading(false);
+    };
+
+    // 监听数据加载完成事件
+    window.addEventListener('dataLoaded', handleDataLoaded);
+
+    // 清理事件监听器
+    return () => {
+      window.removeEventListener('dataLoaded', handleDataLoaded);
+    };
+  }, []);
+
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 ${theme}`}>
       <motion.div 
         className="container mx-auto px-4 py-8"
         variants={containerVariants}
         initial="hidden"
-        animate="visible"
+        animate={isLoading ? "hidden" : "visible"}
       >
         {/* 页面头部 */}
         <motion.div 
@@ -119,6 +136,17 @@ export default function Home() {
           </p>
         </div>
       </motion.div>
+      
+      {/* 数据加载中展示 */}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-xl text-gray-900 dark:text-white">加载数据中...</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">正在从CSV文件读取数据</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
