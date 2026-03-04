@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
 import { DateRange } from '../types';
+import SalesOverview from '../components/SalesOverview';
+import MonthlySalesChart from '../components/MonthlySalesChart';
+import MarketShareChart from '../components/MarketShareChart';
+import SalesTrendChart from '../components/SalesTrendChart';
+import SalesTable from '../components/SalesTable';
 import DateFilter from '../components/DateFilter';
-import { useLocation } from 'react-router-dom';
-import PriceRangeSalesChart from '../components/PriceRangeSalesChart';
-import PriceRangeComparisonChart from '../components/PriceRangeComparisonChart';
-import PriceRangeTable from '../components/PriceRangeTable';
-import PriceRangePercentChart from '../components/PriceRangePercentChart';
 import ViewSelector from '../components/ViewSelector';
+import { useLocation } from 'react-router-dom';
 
-export default function PriceSegmentedSales() {
+export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   
@@ -83,7 +84,7 @@ export default function PriceSegmentedSales() {
         </motion.div>
 
         {/* 视图选择器 */}
-        <ViewSelector currentView="price-segmented" dateRange={dateRange} />
+        <ViewSelector currentView="overall-sales" dateRange={dateRange} />
 
         {/* 视图标题 */}
         <motion.div 
@@ -93,22 +94,23 @@ export default function PriceSegmentedSales() {
           transition={{ delay: 0.2 }}
         >
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-            <i className="fa-solid fa-tag text-green-500 mr-2"></i>
-            价格区分销量
+            <i className="fa-solid fa-chart-line text-blue-500 mr-2"></i>
+            车企总体销量
           </h2>
         </motion.div>
 
-         {/* 价格区间销量占比 */}
-         <PriceRangeSalesChart className="mb-8" dateRange={dateRange} />
+        {/* 销量概览卡片 - 传递日期范围 */}
+        <SalesOverview className="mb-8" dateRange={dateRange} />
 
-         {/* 价格区间与能源类型销量对比 */}
-         <PriceRangeComparisonChart className="mb-8" dateRange={dateRange} />
-         
-         {/* 价格区间销量百分比分布 */}
-         <PriceRangePercentChart className="mb-8" dateRange={dateRange} />
+         {/* 图表部分 - 传递日期范围 */}
+         <MonthlySalesChart className="mb-8" dateRange={dateRange} />
+         <MarketShareChart className="mb-8" dateRange={dateRange} />
 
-        {/* 价格区间销量明细表 */}
-        <PriceRangeTable className="mb-8" dateRange={dateRange} />
+         {/* 销量趋势分析 */}
+         <SalesTrendChart className="mb-8" dateRange={dateRange} />
+
+        {/* 厂商品牌销量表格 - 传递日期范围 */}
+        <SalesTable className="mb-8" dateRange={dateRange} />
 
         {/* 页脚 */}
         <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800">

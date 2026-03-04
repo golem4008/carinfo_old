@@ -1,16 +1,62 @@
-/** WARNING: DON'T EDIT THIS FILE */
-/** WARNING: DON'T EDIT THIS FILE */
-/** WARNING: DON'T EDIT THIS FILE */
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
+node_modules
+dist
+dist-ssr
+*.local
 
-function getPlugins() {
-  const plugins = [react(), tsconfigPaths()];
-  return plugins;
-}
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-export default defineConfig({
-  plugins: getPlugins(),
-});
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testing
+coverage
+*.lcov
+.nyc_output
+
+# Production
+build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# pnpm
+pnpm-lock.yaml
